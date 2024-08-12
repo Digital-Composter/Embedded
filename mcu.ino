@@ -10,7 +10,17 @@
 
 String incomingMessage = "";
 uint8_t address_MCU = 0x02;
-//uint8_t address_B = 0x03;
+uint8_t address_B = 0x03;
+
+int state = 0;
+int days = 0;
+float vc1, vc2, vc3, c1, c2, c3, lw1, lw2, lw3, w1, w2, w3, h1, h2, h3, vh1, vh2, vh3, moist_min, moist_max;
+float heater_pwm, exhaust_pwm;
+
+int temp_val = 24, moist_val = 33, ph_val = 5, temp_ambiance = 22, humid_ambiance = 68;
+
+float target_temp;
+String phase = "";
 
 void setup() {
   Serial.begin(115200);
@@ -48,66 +58,84 @@ void receiveFromGateway_A() {
         incomingMessage += (char)LoRa.read();
       }
       Serial.println("Message received");
-      Serial.print(incomingMessage);
       parseLoRaMessage(incomingMessage);
-            
-      //transmitToGateway_B();  // Step 2: Immediately transmit `sensor_a` to ESP_B
+
+      Serial.printf("state: %d\n", state);
+      Serial.printf("vc1: %.3f, vc2: %.3f, vc3: %.3f\n", vc1, vc2, vc3);
+      Serial.printf("c1: %.3f, c2: %.3f, c3: %.3f\n", c1, c2, c3);
+      Serial.printf("lw1: %.3f, lw2: %.3f, lw3: %.3f\n", lw1, lw2, lw3);
+      Serial.printf("w1: %.3f, w2: %.3f, w3: %.3f\n", w1, w2, w3);
+      Serial.printf("h1: %.3f, h2: %.3f, h3: %.3f\n", h1, h2, h3);
+      Serial.printf("vh1: %.3f, vh2: %.3f, vh3: %.3f\n", vh1, vh2, vh3);
+      Serial.printf("moist_min: %.3f, moist_max: %.3f\n", moist_min, moist_max);
+      Serial.printf("days: %d\n", days);
+      Serial.printf("heater: %.3f, exhaust: %.3f\n", heater_pwm, exhaust_pwm);
+
+      Serial.printf("\nTemperature: %d, Moisture: %d, pH: %d, Days: %d\n", temp_val, moist_val, ph_val, days);
+      phase = determinePhase(temp_val, days);
+      Serial.println("Phase: ");
+      Serial.print(phase);
+      setTargetTemp(phase);
+      Serial.printf("\nTarget Temperature: %.3f\n", target_temp);
+           
+      transmitToGateway_B(address_B, temp_val, moist_val, ph_val, temp_ambiance, humid_ambiance, phase);  // Step 2: Immediately transmit `sensor_a` to ESP_B
+
+      Serial.printf("Activate PTC Heater with %.3f PWM and Exhaust Fan with %.3f PWM\n", heater_pwm, exhaust_pwm);
+      if (exhaust_pwm > heater_pwm){
+        Serial.printf("Activate Mixer Motor");
+      }
+      controlMoist(moist_val, moist_min, moist_max);
+      
       incomingMessage = "";
     }
   }
 }
 
-// void transmitToGateway_B() {
-//     int sensor_a = analogRead(34); // Example `sensor_a` data, replace with actual sensor reading
+void transmitToGateway_B(int8_t address, int temp, int moist, int ph, int temp_amb, int humid_amb, String phase) {
 
-//     // Transmit `sensor_a` data to ESP_B
-//     LoRa.beginPacket();
-//     LoRa.write(address_B);   // Add target address (ESP_B)
-//     LoRa.print(sensor_a);    // Add sensor data
-//     LoRa.endPacket();
+  LoRa.beginPacket();
+  
+  LoRa.write(address);
+  
+  LoRa.print("temp:"); LoRa.print(temp); LoRa.print(",");
+  LoRa.print("moist:"); LoRa.print(moist); LoRa.print(",");
+  LoRa.print("pH:"); LoRa.print(ph); LoRa.print(",");
+  LoRa.print("tempambiance:"); LoRa.print(temp_amb); LoRa.print(",");
+  LoRa.print("humidambiance:"); LoRa.print(humid_amb); LoRa.print(",");
+  LoRa.print("phase:"); LoRa.print(phase);
 
-//     Serial.println("Transmitted sensor_a to ESP_B: " + String(sensor_a));
+  LoRa.endPacket();
 
-//     delay(1000); // Short delay to ensure transmission is complete
-// }
+  Serial.println("Data transmitted to Gateway B\n");
+
+  delay(500); // Short delay to ensure transmission is complete
+}
 
 void parseLoRaMessage(String message) {
-  int state = getValue(message, "state").toInt();
-  float vc1 = getValue(message, "vc1").toFloat();
-  float vc2 = getValue(message, "vc2").toFloat();
-  float vc3 = getValue(message, "vc3").toFloat();
-  float c1 = getValue(message, "jc1").toFloat();
-  float c2 = getValue(message, "jc2").toFloat();
-  float c3 = getValue(message, "jc3").toFloat();
-  float lw1 = getValue(message, "lw1").toFloat();
-  float lw2 = getValue(message, "lw2").toFloat();
-  float lw3 = getValue(message, "lw3").toFloat();
-  float w1 = getValue(message, "jw1").toFloat();
-  float w2 = getValue(message, "jw2").toFloat();
-  float w3 = getValue(message, "jw3").toFloat();
-  float h1 = getValue(message, "h1").toFloat();
-  float h2 = getValue(message, "h2").toFloat();
-  float h3 = getValue(message, "h3").toFloat();
-  float vh1 = getValue(message, "vh1").toFloat();
-  float vh2 = getValue(message, "vh2").toFloat();
-  float vh3 = getValue(message, "vh3").toFloat();
-  float moist_min = getValue(message, "moistmin").toFloat();  // Adjusted key to match input data
-  float moist_max = getValue(message, "moistmax").toFloat();  // Adjusted key to match input data
-  int days = getValue(message, "days").toInt();
-  float heater = getValue(message, "heater").toFloat();
-  float exhaust = getValue(message, "exhaust").toFloat();
-
-  // Print parsed values
-  Serial.printf("state: %d\n", state);
-  Serial.printf("vc1: %.3f, vc2: %.3f, vc3: %.3f\n", vc1, vc2, vc3);
-  Serial.printf("c1: %.3f, c2: %.3f, c3: %.3f\n", c1, c2, c3);
-  Serial.printf("lw1: %.3f, lw2: %.3f, lw3: %.3f\n", lw1, lw2, lw3);
-  Serial.printf("w1: %.3f, w2: %.3f, w3: %.3f\n", w1, w2, w3);
-  Serial.printf("h1: %.3f, h2: %.3f, h3: %.3f\n", h1, h2, h3);
-  Serial.printf("vh1: %.3f, vh2: %.3f, vh3: %.3f\n", vh1, vh2, vh3);
-  Serial.printf("moist_min: %.3f, moist_max: %.3f\n", moist_min, moist_max);
-  Serial.printf("days: %d\n", days);
-  Serial.printf("heater: %.3f, exhaust: %.3f\n", heater, exhaust);
+  state = getValue(message, "state").toInt();
+  vc1 = getValue(message, "vc1").toFloat();
+  vc2 = getValue(message, "vc2").toFloat();
+  vc3 = getValue(message, "vc3").toFloat();
+  c1 = getValue(message, "jc1").toFloat();
+  c2 = getValue(message, "jc2").toFloat();
+  c3 = getValue(message, "jc3").toFloat();
+  lw1 = getValue(message, "lw1").toFloat();
+  lw2 = getValue(message, "lw2").toFloat();
+  lw3 = getValue(message, "lw3").toFloat();
+  w1 = getValue(message, "jw1").toFloat();
+  w2 = getValue(message, "jw2").toFloat();
+  w3 = getValue(message, "jw3").toFloat();
+  h1 = getValue(message, "h1").toFloat();
+  h2 = getValue(message, "h2").toFloat();
+  h3 = getValue(message, "h3").toFloat();
+  vh1 = getValue(message, "vh1").toFloat();
+  vh2 = getValue(message, "vh2").toFloat();
+  vh3 = getValue(message, "vh3").toFloat();
+  moist_min = getValue(message, "moistmin").toFloat();  // Adjusted key to match input data
+  moist_max = getValue(message, "moistmax").toFloat();  // Adjusted key to match input data
+  days = getValue(message, "days").toInt();
+  heater_pwm = getValue(message, "heater").toFloat();
+  exhaust_pwm = getValue(message, "exhaust").toFloat();
 }
 
 // Helper function to extract the value associated with a key from the message
@@ -125,4 +153,64 @@ String getValue(String data, String key) {
   }
   
   return data.substring(startIndex, endIndex);
+}
+
+String determinePhase(float temp, int waktu) {
+    if (temp >= 10 && temp <= 30 && waktu >= 20 && waktu <= 35) {
+        return "Maturasi";
+    } else if (temp >= 20 && temp <= 50 && waktu >= 10 && waktu <= 30) {
+        return "Mesofilik 2";
+    } else if (temp >= 45 && temp <= 75 && waktu >= 5 && waktu <= 8) {
+        return "Thermofilik 2";
+    } else if (temp >= 45 && temp <= 75 && waktu >= 3 && waktu <= 15) {
+        if (waktu >= 5 && waktu <= 8) {
+            return "Thermofilik 2";
+        } else {
+            return "Thermofilik 1";
+        }
+    } else if (temp >= 10 && temp <= 50 && waktu >= 1 && waktu <= 5) {
+        return "Mesofilik 1";
+
+    } else if (temp >= 10 && temp <= 45 && waktu < 10) {
+      if (waktu >= 5 && waktu <= 8) {
+            return "Thermofilik 2";
+        } else {
+            return "Mesofilik 1";
+        }
+    } else if (temp >= 45 && temp <= 75 && waktu > 15) {
+        return "Thermofilik 1";
+    } else if (temp >= 20 && temp <= 50 && waktu > 30) {
+        return "Mesofilik 2";
+    } else if (temp >= 10 && temp <= 30 && waktu > 35) {
+        return "Maturasi";
+
+    } else {
+        return "Out of Expected Range";
+    }
+}
+
+void setTargetTemp(String phase) {
+  if (phase == "Mesofilik 1") {
+    target_temp = lw2;
+  } else if (phase == "Thermofilik 1") {
+    target_temp = w2;
+  } else if (phase == "Thermofilik 2") {
+    target_temp = h2;
+  } else if (phase == "Mesofilik 2") {
+    target_temp = c2;
+  } else if (phase == "Maturasi") {
+    target_temp = vc2;
+  } else {
+    target_temp = lw2;
+  }
+}
+
+void controlMoist(int moist, float moist_min, float moist_max) {
+  if (moist < moist_min) {
+    Serial.println("Water Pump and Mixer Motor Active\n");
+  } else if (moist > moist_max) {
+    Serial.println("Exhaust Fan and Mixer Motor Active\n");
+  } else {
+    Serial.println("optimum moisture\n");
+  }
 }
