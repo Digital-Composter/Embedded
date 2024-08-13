@@ -2,11 +2,39 @@
 #include <ArduinoJson.h>
 #include <SPI.h>
 #include <LoRa.h>
+#include "DHT.h"
+#include <SoftwareSerial.h>
 
 #define LORA_AURORA_V2_NSS 5
 #define LORA_AURORA_V2_RST 14
 #define LORA_AURORA_V2_DIO0 2
 //#define LORA_AURORA_V2_EN 32
+
+//Pin PR3001
+#define RE 27
+#define DE 26
+
+//Pin DHT22
+#define DHTPIN 0
+#define DHTTYPE DHT22
+DHT dht(DHTPIN, DHTTYPE);
+
+#define heatFan 25
+#define waterPump 33
+#define mixMotor 32
+#define ptcHeater 13
+#define coolFan 12
+
+const uint32_t TIMEOUT = 500UL;
+
+const byte moist[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x01, 0x84, 0x0A};
+const byte temp[] = {0x01, 0x03, 0x00, 0x01, 0x00, 0x01, 0xD5, 0xCA};
+const byte PH[] = {0x01, 0x03, 0x00, 0x03, 0x00, 0x01, 0x74, 0x0A};
+
+byte values[11];
+
+// Rx pin, Tx pin // Software serial for RS485 communication
+SoftwareSerial mod(17, 16);
 
 String incomingMessage = "";
 uint8_t address_MCU = 0x02;
@@ -17,25 +45,43 @@ int days = 0;
 float vc1, vc2, vc3, c1, c2, c3, lw1, lw2, lw3, w1, w2, w3, h1, h2, h3, vh1, vh2, vh3, moist_min, moist_max;
 float heater_pwm, exhaust_pwm;
 
-int temp_val = 24, moist_val = 33, ph_val = 5, temp_ambiance = 22, humid_ambiance = 68;
+int temp_val, moist_val, ph_val, temp_ambiance, humid_ambiance;
 
 float target_temp;
 String phase = "";
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(4800);
+  mod.begin(4800);
+
+  //Setup untuk input
+  pinMode(RE, OUTPUT);
+  pinMode(DE, OUTPUT);
+  pinMode(DHTPIN, INPUT);
+
+  //Setup untuk output
+  pinMode(heatFan, OUTPUT);
+  pinMode(waterPump, OUTPUT);
+  pinMode(mixMotor, OUTPUT);
+  pinMode(ptcHeater, OUTPUT);
+  pinMode(coolFan, OUTPUT);
+  digitalWrite(heatFan, HIGH);
+  digitalWrite(waterPump, HIGH);
+  digitalWrite(mixMotor, HIGH);
 
   Serial.println();
   Serial.println();
   Serial.println();
-
-  LoRa.setPins(LORA_AURORA_V2_NSS, LORA_AURORA_V2_RST, LORA_AURORA_V2_DIO0);
 
   for(uint8_t t = 4; t > 0; t--) {
     Serial.printf("[SETUP] WAIT %d...\n", t);
     Serial.flush();
     delay(1000);
   }
+
+  dht.begin();
+
+  LoRa.setPins(LORA_AURORA_V2_NSS, LORA_AURORA_V2_RST, LORA_AURORA_V2_DIO0);
 
   while (!LoRa.begin(920E6)) {
     Serial.println(".");
@@ -57,7 +103,7 @@ void receiveFromGateway_A() {
       while (LoRa.available()) {
         incomingMessage += (char)LoRa.read();
       }
-      Serial.println("Message received");
+      Serial.println("Data received from MCU");
       parseLoRaMessage(incomingMessage);
 
       Serial.printf("state: %d\n", state);
@@ -71,10 +117,19 @@ void receiveFromGateway_A() {
       Serial.printf("days: %d\n", days);
       Serial.printf("heater: %.3f, exhaust: %.3f\n", heater_pwm, exhaust_pwm);
 
+      moist_val = moisture();
+      temp_val = temperature();
+      ph_val = ph();
+
+      temp_ambiance = dht.readTemperature();
+      humid_ambiance = dht.readHumidity();
+
       Serial.printf("\nTemperature: %d, Moisture: %d, pH: %d, Days: %d\n", temp_val, moist_val, ph_val, days);
+      Serial.printf("Ambiance Temperature: %d, Humidity: %d\n", temp_ambiance, humid_ambiance);
+      
       phase = determinePhase(temp_val, days);
       Serial.println("Phase: ");
-      Serial.print(phase);
+      Serial.println(phase);
       setTargetTemp(phase);
       Serial.printf("\nTarget Temperature: %.3f\n", target_temp);
            
@@ -214,4 +269,82 @@ void controlMoist(int moist, float moist_min, float moist_max) {
   } else {
     Serial.println("optimum moisture\n");
   }
+}
+
+int16_t moisture() {
+  float MOIST3and4;
+  uint32_t startTime = 0;
+  uint8_t  byteCount = 0;
+
+  digitalWrite(DE, HIGH);
+  digitalWrite(RE, HIGH);
+  delay(10);
+  mod.write(moist, sizeof(moist));
+    mod.flush();
+    digitalWrite(DE, LOW);
+    digitalWrite(RE, LOW);
+
+  startTime = millis();
+  while ( millis() - startTime <= TIMEOUT ) {
+    if (mod.available() && byteCount < sizeof(values) ) {
+      values[byteCount++] = mod.read();
+      //printHexByte(values[byteCount - 1]);
+    }
+    MOIST3and4 = (((values[3] * 256.0) + values[4])/10); // converting hexadecimal to decimal
+  }
+    //Serial.println();
+    return MOIST3and4;
+}
+
+int16_t temperature() {
+  float TEMP3and4;
+  uint32_t startTime = 0;
+  uint8_t  byteCount = 0;
+// switch RS-485 to transmit mode
+  digitalWrite(DE, HIGH);
+  digitalWrite(RE, HIGH);
+  delay(10);
+// write out the message
+  mod.write(temp, sizeof(temp));
+// wait for the transmission to complete
+  mod.flush();
+// switch RS-485 to receive mode
+  digitalWrite(DE, LOW);
+  digitalWrite(RE, LOW);
+
+  startTime = millis();
+  while ( millis() - startTime <= TIMEOUT ) {
+    if (mod.available() && byteCount < sizeof(values) ) {
+      values[byteCount++] = mod.read();
+      //printHexByte(values[byteCount - 1]);
+    }
+    TEMP3and4 = (((values[3] * 256.0) + values[4])/10); // converting hexadecimal to decimal
+  }
+    //Serial.println();
+    return TEMP3and4;
+}
+
+int16_t ph() {
+  float PH3and4;
+  uint32_t startTime = 0;
+  uint8_t  byteCount = 0;
+
+  digitalWrite(DE, HIGH);
+  digitalWrite(RE, HIGH);
+  delay(10);
+  mod.write(PH, sizeof(PH));
+  mod.flush();
+  digitalWrite(DE, LOW);
+  digitalWrite(RE, LOW);
+
+  startTime = millis();
+  while ( millis() - startTime <= TIMEOUT ) {
+    if (mod.available() && byteCount < sizeof(values) ) {
+     values[byteCount++] = mod.read();
+      //printHexByte(values[byteCount - 1]);
+    }
+    PH3and4 = (((values[3] * 256.0) + values[4])/10) + 1; // converting hexadecimal to decimal
+  }
+  //Serial.println();
+  return PH3and4;
 }
