@@ -78,7 +78,7 @@ void receiveFromGateway_A() {
       setTargetTemp(phase);
       Serial.printf("\nTarget Temperature: %.3f\n", target_temp);
            
-      transmitToGateway_B(address_B, temp_val, moist_val, ph_val, temp_ambiance, humid_ambiance, phase);  // Step 2: Immediately transmit `sensor_a` to ESP_B
+      transmitToGateway_B(address_B, temp_val, moist_val, ph_val, temp_ambiance, humid_ambiance, phase, target_temp);  // Step 2: Immediately transmit `sensor_a` to ESP_B
 
       Serial.printf("Activate PTC Heater with %.3f PWM and Exhaust Fan with %.3f PWM\n", heater_pwm, exhaust_pwm);
       if (exhaust_pwm > heater_pwm){
@@ -91,7 +91,7 @@ void receiveFromGateway_A() {
   }
 }
 
-void transmitToGateway_B(int8_t address, int temp, int moist, int ph, int temp_amb, int humid_amb, String phase) {
+void transmitToGateway_B(int8_t address, int temp, int moist, int ph, int temp_amb, int humid_amb, String phase, float target_temp) {
 
   LoRa.beginPacket();
   
@@ -102,7 +102,8 @@ void transmitToGateway_B(int8_t address, int temp, int moist, int ph, int temp_a
   LoRa.print("pH:"); LoRa.print(ph); LoRa.print(",");
   LoRa.print("tempambiance:"); LoRa.print(temp_amb); LoRa.print(",");
   LoRa.print("humidambiance:"); LoRa.print(humid_amb); LoRa.print(",");
-  LoRa.print("phase:"); LoRa.print(phase);
+  LoRa.print("phase:"); LoRa.print(phase); LoRa.print(",");
+  LoRa.print("targettemp:"); LoRa.print(target_temp);
 
   LoRa.endPacket();
 
