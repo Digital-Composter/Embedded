@@ -103,7 +103,7 @@ void receiveFromGateway_A() {
       while (LoRa.available()) {
         incomingMessage += (char)LoRa.read();
       }
-      Serial.println("Data received from MCU");
+      Serial.println("\nData received from MCU");
       parseLoRaMessage(incomingMessage);
 
       Serial.printf("state: %d\n", state);
@@ -126,20 +126,15 @@ void receiveFromGateway_A() {
 
       Serial.printf("\nTemperature: %d, Moisture: %d, pH: %d, Days: %d\n", temp_val, moist_val, ph_val, days);
       Serial.printf("Ambiance Temperature: %d, Humidity: %d\n", temp_ambiance, humid_ambiance);
-      
       phase = determinePhase(temp_val, days);
-      Serial.println("Phase: ");
-      Serial.println(phase);
+      Serial.print("Phase: ");
+      Serial.print(phase);
       setTargetTemp(phase);
       Serial.printf("\nTarget Temperature: %.3f\n", target_temp);
            
       transmitToGateway_B(address_B, temp_val, moist_val, ph_val, temp_ambiance, humid_ambiance, phase, target_temp);  // Step 2: Immediately transmit `sensor_a` to ESP_B
 
-      Serial.printf("Activate PTC Heater with %.3f PWM and Exhaust Fan with %.3f PWM\n", heater_pwm, exhaust_pwm);
-      if (exhaust_pwm > heater_pwm){
-        Serial.printf("Activate Mixer Motor");
-      }
-      controlMoist(moist_val, moist_min, moist_max);
+      controlActuators(heater_pwm, exhaust_pwm, moist_min, moist_max, moist_val);
       
       incomingMessage = "";
     }
@@ -261,14 +256,57 @@ void setTargetTemp(String phase) {
   }
 }
 
-void controlMoist(int moist, float moist_min, float moist_max) {
-  if (moist < moist_min) {
-    Serial.println("Water Pump and Mixer Motor Active\n");
-  } else if (moist > moist_max) {
-    Serial.println("Exhaust Fan and Mixer Motor Active\n");
-  } else {
-    Serial.println("optimum moisture\n");
-  }
+void controlActuators(float heater_pwm, float exhaust_pwm, float moist_min, float moist_max, int moist_val) {
+    analogWrite(coolFan, heater_pwm);
+    analogWrite(coolFan, exhaust_pwm);
+    Serial.printf("Activate PTC Heater with %.3f PWM and Exhaust Fan with %.3f PWM\n", heater_pwm, exhaust_pwm);
+
+    if (heater_pwm > exhaust_pwm && moist_val < moist_min) {
+        digitalWrite(heatFan, LOW);
+        digitalWrite(mixMotor, LOW);
+        digitalWrite(waterPump, LOW);
+        Serial.println("Condition 1: HeatFan ON, MixMotor ON, WaterPump ON");
+    } else if (heater_pwm < exhaust_pwm && moist_val < moist_min) {
+        digitalWrite(heatFan, HIGH);
+        digitalWrite(mixMotor, LOW);
+        digitalWrite(waterPump, LOW);
+        Serial.println("Condition 2: HeatFan OFF, MixMotor ON, WaterPump ON");
+    } else if (heater_pwm == exhaust_pwm && moist_val < moist_min) {
+        digitalWrite(heatFan, HIGH);
+        digitalWrite(mixMotor, LOW);
+        digitalWrite(waterPump, LOW);
+        Serial.println("Condition 3: HeatFan OFF, MixMotor ON, WaterPump ON");
+    } else if (heater_pwm > exhaust_pwm && moist_val > moist_max) {
+        digitalWrite(heatFan, LOW);
+        digitalWrite(mixMotor, LOW);
+        digitalWrite(waterPump, HIGH);
+        Serial.println("Condition 4: HeatFan ON, MixMotor ON, WaterPump OFF");
+    } else if (heater_pwm < exhaust_pwm && moist_val > moist_max) {
+        digitalWrite(heatFan, LOW);
+        digitalWrite(mixMotor, LOW);
+        digitalWrite(waterPump, HIGH);
+        Serial.println("Condition 5: HeatFan ON, MixMotor ON, WaterPump OFF");
+    } else if (heater_pwm == exhaust_pwm && moist_val > moist_max) {
+        digitalWrite(heatFan, LOW);
+        digitalWrite(mixMotor, LOW);
+        digitalWrite(waterPump, HIGH);
+        Serial.println("Condition 6: HeatFan ON, MixMotor ON, WaterPump OFF");
+    } else if (heater_pwm > exhaust_pwm && moist_val > moist_min && moist_val < moist_max) {
+        digitalWrite(heatFan, LOW);
+        digitalWrite(mixMotor, HIGH);
+        digitalWrite(waterPump, HIGH);
+        Serial.println("Condition 7: HeatFan ON, MixMotor OFF, WaterPump OFF");
+    } else if (heater_pwm < exhaust_pwm && moist_val > moist_min && moist_val < moist_max) {
+        digitalWrite(heatFan, HIGH);
+        digitalWrite(mixMotor, LOW);
+        digitalWrite(waterPump, HIGH);
+        Serial.println("Condition 8: HeatFan OFF, MixMotor ON, WaterPump OFF");
+    } else if (heater_pwm == exhaust_pwm && moist_val > moist_min && moist_val < moist_max) {
+        digitalWrite(heatFan, HIGH);
+        digitalWrite(mixMotor, HIGH);
+        digitalWrite(waterPump, HIGH);
+        Serial.println("Condition 9: HeatFan OFF, MixMotor OFF, WaterPump OFF");
+    }
 }
 
 int16_t moisture() {
