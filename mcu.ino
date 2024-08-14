@@ -117,26 +117,53 @@ void receiveFromGateway_A() {
       Serial.printf("days: %d\n", days);
       Serial.printf("heater: %.3f, exhaust: %.3f\n", heater_pwm, exhaust_pwm);
 
-      moist_val = moisture();
-      temp_val = temperature();
-      ph_val = ph();
+      if (state == 1){
+        moist_val = moisture();
+        temp_val = temperature();
+        ph_val = ph();
 
-      temp_ambiance = dht.readTemperature();
-      humid_ambiance = dht.readHumidity();
+        temp_ambiance = dht.readTemperature();
+        humid_ambiance = dht.readHumidity();
 
-      Serial.printf("\nTemperature: %d, Moisture: %d, pH: %d, Days: %d\n", temp_val, moist_val, ph_val, days);
-      Serial.printf("Ambiance Temperature: %d, Humidity: %d\n", temp_ambiance, humid_ambiance);
-      phase = determinePhase(temp_val, days);
-      Serial.print("Phase: ");
-      Serial.print(phase);
-      setTargetTemp(phase);
-      Serial.printf("\nTarget Temperature: %.3f\n", target_temp);
-           
-      transmitToGateway_B(address_B, temp_val, moist_val, ph_val, temp_ambiance, humid_ambiance, phase, target_temp);  // Step 2: Immediately transmit `sensor_a` to ESP_B
+        Serial.printf("\nTemperature: %d, Moisture: %d, pH: %d, Days: %d\n", temp_val, moist_val, ph_val, days);
+        Serial.printf("Ambiance Temperature: %d, Humidity: %d\n", temp_ambiance, humid_ambiance);
+        phase = determinePhase(temp_val, days);
+        Serial.print("Phase: ");
+        Serial.print(phase);
+        setTargetTemp(phase);
+        Serial.printf("\nTarget Temperature: %.3f\n", target_temp);
+            
+        transmitToGateway_B(address_B, temp_val, moist_val, ph_val, temp_ambiance, humid_ambiance, phase, target_temp);  // Step 2: Immediately transmit `sensor_a` to ESP_B
 
-      controlActuators(heater_pwm, exhaust_pwm, moist_min, moist_max, moist_val);
-      
-      incomingMessage = "";
+        controlActuators(heater_pwm, exhaust_pwm, moist_min, moist_max, moist_val);
+        
+        incomingMessage = "";
+      }
+      else {
+        moist_val = moisture();
+        temp_val = temperature();
+        ph_val = ph();
+
+        temp_ambiance = dht.readTemperature();
+        humid_ambiance = dht.readHumidity();
+
+        Serial.printf("\nTemperature: %d, Moisture: %d, pH: %d, Days: %d\n", temp_val, moist_val, ph_val, days);
+        Serial.printf("Ambiance Temperature: %d, Humidity: %d\n", temp_ambiance, humid_ambiance);
+        phase = determinePhase(temp_val, days);
+        Serial.print("Phase: ");
+        Serial.print(phase);
+        setTargetTemp(phase);
+        Serial.printf("\nTarget Temperature: %.3f\n", target_temp);
+
+        analogWrite(ptcHeater, 0);
+        analogWrite(coolFan, 0);
+        digitalWrite(heatFan, HIGH);
+        digitalWrite(mixMotor, HIGH);
+        digitalWrite(waterPump, HIGH);
+            
+        transmitToGateway_B(address_B, temp_val, moist_val, ph_val, temp_ambiance, humid_ambiance, phase, target_temp);  // Step 2: Immediately transmit `sensor_a` to ESP_B
+        incomingMessage = "";
+      }
     }
   }
 }
@@ -257,7 +284,7 @@ void setTargetTemp(String phase) {
 }
 
 void controlActuators(float heater_pwm, float exhaust_pwm, float moist_min, float moist_max, int moist_val) {
-    analogWrite(coolFan, heater_pwm);
+    analogWrite(ptcHeater, heater_pwm);
     analogWrite(coolFan, exhaust_pwm);
     Serial.printf("Activate PTC Heater with %.3f PWM and Exhaust Fan with %.3f PWM\n", heater_pwm, exhaust_pwm);
 
