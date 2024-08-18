@@ -38,7 +38,7 @@ void setup() {
     delay(1000);
   }
 
-  wifiMulti.addAP("hiskandar", "awlb5756");
+  wifiMulti.addAP("BERLIMA", "ziaqwj73");
 
   while (!LoRa.begin(920E6)) {
     Serial.println(".");
@@ -63,14 +63,14 @@ void receiveFromMCU() {
       Serial.println("Message received");
       parseLoRaMessage(incomingMessage);
 
-      Serial.printf("temperature: %d\n", temp_val);
+      Serial.printf("\ntemperature: %d\n", temp_val);
       Serial.printf("moisture: %d\n", moist_val);
       Serial.printf("pH: %d\n", ph_val);
 
       Serial.println("Phase: ");
       Serial.print(phase);
 
-      Serial.printf("\nTarget Temperature: %d\n\n", target_temp);
+      Serial.printf("\nTarget Temperature: %.3f\n\n", target_temp);
 
       postRealtime(temp_val, moist_val, ph_val, phase);
       postFuzzy(temp_val, target_temp);
@@ -150,12 +150,15 @@ void postFuzzy(int temp_val, float target_temp) {
 }
 
 void postRecords() {
+  String log = "MCU";
   if (wifiMulti.run() == WL_CONNECTED) {
     HTTPClient http;
 
     http.begin("https://dicompos-backend-prod-45yiaz3vqa-et.a.run.app/data/records");
 
-    int httpResponseCode = http.POST("");
+    String httpRequestData = "{\"log\":" + log + "}";
+
+    int httpResponseCode = http.POST(httpRequestData);
 
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);
