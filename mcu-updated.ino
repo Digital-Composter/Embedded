@@ -169,7 +169,7 @@ void transmitToGateway_B(int8_t address, int temp, int moist, int ph, String pha
   LoRa.print("moist:"); LoRa.print(moist); LoRa.print(",");
   LoRa.print("pH:"); LoRa.print(ph); LoRa.print(",");
   LoRa.print("phase:"); LoRa.print(phase); LoRa.print(",");
-  LoRa.print("targettemp:"); LoRa.print(target_temp);
+  LoRa.print("targettemp:"); LoRa.print(target_temp); LoRa.print(",");
 
   LoRa.endPacket();
 
