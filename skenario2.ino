@@ -161,7 +161,7 @@ void transmitToGateway_B(int8_t address, int temp, int moist, int ph, String pha
   LoRa.print("moist:"); LoRa.print(moist); LoRa.print(",");
   LoRa.print("pH:"); LoRa.print(ph); LoRa.print(",");
   LoRa.print("phase:"); LoRa.print(phase); LoRa.print(",");
-  LoRa.print("targettemp:"); LoRa.print(target_temp);
+  LoRa.print("targettemp:"); LoRa.print(target_temp); LoRa.print(",");
 
   LoRa.endPacket();
 
@@ -215,11 +215,11 @@ String getValue(String data, String key) {
 }
 
 String determinePhase(float temp, int waktu) {
-    if (temp >= 10 && temp <= 30 && waktu >= 20 && waktu <= 35) {
+    if (temp >= 10 && temp <= 25 && waktu >= 20 && waktu <= 35) {
         return "Maturasi";
-    } else if (temp >= 20 && temp <= 50 && waktu >= 10 && waktu <= 30) {
+    } else if (temp >= 25 && temp <= 45 && waktu >= 10 && waktu <= 30) {
         return "Mesofilik 2";
-    } else if (temp >= 45 && temp <= 75 && waktu >= 5 && waktu <= 8) {
+    } else if (temp >= 55 && temp <= 75 && waktu >= 3 && waktu <= 8) {
         return "Thermofilik 2";
     } else if (temp >= 45 && temp <= 75 && waktu >= 3 && waktu <= 15) {
         if (waktu >= 5 && waktu <= 8) {
@@ -227,8 +227,12 @@ String determinePhase(float temp, int waktu) {
         } else {
             return "Thermofilik 1";
         }
-    } else if (temp >= 10 && temp <= 50 && waktu >= 1 && waktu <= 5) {
-        return "Mesofilik 1";
+    } else if (temp >= 10 && temp <= 75 && waktu >= 1 && waktu <= 4) {
+        if (waktu == 4) {
+            return "Thermofilik 1";
+        } else {
+            return "Mesofilik 1";
+        }
 
     } else if (temp >= 10 && temp <= 45 && waktu < 10) {
       if (waktu >= 5 && waktu <= 8) {
@@ -238,9 +242,9 @@ String determinePhase(float temp, int waktu) {
         }
     } else if (temp >= 45 && temp <= 75 && waktu > 15) {
         return "Thermofilik 1";
-    } else if (temp >= 20 && temp <= 50 && waktu > 30) {
+    } else if (temp >= 20 && temp <= 45 && waktu > 30) {
         return "Mesofilik 2";
-    } else if (temp >= 10 && temp <= 30 && waktu > 35) {
+    } else if (temp >= 10 && temp <= 20 && waktu > 35) {
         return "Maturasi";
 
     } else {
