@@ -37,7 +37,7 @@ void setup() {
     delay(1000);
   }
 
-  wifiMulti.addAP("hiskandar", "awlb5756");
+  wifiMulti.addAP("BERLIMA", "ziaqwj73");
 
   while (!LoRa.begin(920E6)) {
     Serial.println(".");
@@ -241,7 +241,7 @@ void sendLoRaMessage( int8_t address,
   LoRa.print("moistmax:"); LoRa.print(moist_max); LoRa.print(",");
   LoRa.print("days:"); LoRa.print(days); LoRa.print(",");
   LoRa.print("heater:"); LoRa.print(heater); LoRa.print(",");
-  LoRa.print("exhaust:"); LoRa.print(exhaust);
+  LoRa.print("exhaust:"); LoRa.print(exhaust); LoRa.print(",");
 
   LoRa.endPacket();
 }
