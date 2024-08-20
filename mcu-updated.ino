@@ -16,8 +16,8 @@
 #define MOIST 0
 
 #define heatFan 25
-#define waterPump 33
-#define mixMotor 32
+#define waterPump 32
+#define mixMotor 33
 #define ptcHeater 13
 #define coolFan 12
 
