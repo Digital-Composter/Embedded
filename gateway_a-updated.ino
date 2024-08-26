@@ -54,15 +54,15 @@ void loop() {
   getFuzzy();
 
   Serial.printf("state: %d", state);
-  Serial.printf("\nvc1: %.3f, vc2: %.3f, vc3: %.3f\n", vc1, vc2, vc3);
-  Serial.printf("c1: %.3f, c2: %.3f, c3: %.3f\n", c1, c2, c3);
-  Serial.printf("lw1: %.3f, lw2: %.3f, lw3: %.3f\n", lw1, lw2, lw3);
-  Serial.printf("w1: %.3f, w2: %.3f, w3: %.3f\n", w1, w2, w3);
-  Serial.printf("h1: %.3f, h2: %.3f, h3: %.3f\n", h1, h2, h3);
-  Serial.printf("vh1: %.3f, vh2: %.3f, vh3: %.3f\n", vh1, vh2, vh3);
-  Serial.printf("moist_min: %.3f, moist_max: %.3f", moist_min, moist_max);
+  Serial.printf("\nvc1: %.2f, vc2: %.2f, vc3: %.2f\n", vc1, vc2, vc3);
+  Serial.printf("c1: %.2f, c2: %.2f, c3: %.2f\n", c1, c2, c3);
+  Serial.printf("lw1: %.2f, lw2: %.2f, lw3: %.2f\n", lw1, lw2, lw3);
+  Serial.printf("w1: %.2f, w2: %.2f, w3: %.2f\n", w1, w2, w3);
+  Serial.printf("h1: %.2f, h2: %.2f, h3: %.2f\n", h1, h2, h3);
+  Serial.printf("vh1: %.2f, vh2: %.2f, vh3: %.2f\n", vh1, vh2, vh3);
+  Serial.printf("moist_min: %.2f, moist_max: %.2f", moist_min, moist_max);
   Serial.printf("\ndays: %d", days);
-  Serial.printf("\nheater_pwm: %f, exhaust_pwm: %f\n\n", heater_pwm, exhaust_pwm);
+  Serial.printf("\nheater_pwm: %.2f, exhaust_pwm: %.2f\n", heater_pwm, exhaust_pwm);
 
   sendLoRaMessage( address_MCU, 
                    state, 
@@ -76,7 +76,7 @@ void loop() {
                    days, 
                    heater_pwm, exhaust_pwm ); 
 
-  Serial.println("LoRa data sent");
+  Serial.println("LoRa data sent\n");
 
 
   delay(500);
@@ -121,26 +121,26 @@ void getControl() {
         DeserializationError error = deserializeJson(doc, payload);
 
         if (!error) {
-          vc1 = doc["data"][0]["vc1"];
-          vc2 = doc["data"][0]["vc2"];
-          vc3 = doc["data"][0]["vc3"];
-          c1 = doc["data"][0]["c1"];
-          c2 = doc["data"][0]["c2"];
-          c3 = doc["data"][0]["c3"];
-          lw1 = doc["data"][0]["lw1"];
-          lw2 = doc["data"][0]["lw2"];
-          lw3 = doc["data"][0]["lw3"];
-          w1 = doc["data"][0]["w1"];
-          w2 = doc["data"][0]["w2"];
-          w3 = doc["data"][0]["w3"];
-          h1 = doc["data"][0]["h1"];
-          h2 = doc["data"][0]["h2"];
-          h3 = doc["data"][0]["h3"];
-          vh1 = doc["data"][0]["vh1"];
-          vh2 = doc["data"][0]["vh2"];
-          vh3 = doc["data"][0]["vh3"];
-          moist_min = doc["data"][0]["moist_min"];
-          moist_max = doc["data"][0]["moist_max"];
+          vc1 = round(doc["data"][0]["vc1"].as<float>() * 100.0) / 100.0;
+          vc2 = round(doc["data"][0]["vc2"].as<float>() * 100.0) / 100.0;
+          vc3 = round(doc["data"][0]["vc3"].as<float>() * 100.0) / 100.0;
+          c1 = round(doc["data"][0]["c1"].as<float>() * 100.0) / 100.0;
+          c2 = round(doc["data"][0]["c2"].as<float>() * 100.0) / 100.0;
+          c3 = round(doc["data"][0]["c3"].as<float>() * 100.0) / 100.0;
+          lw1 = round(doc["data"][0]["lw1"].as<float>() * 100.0) / 100.0;
+          lw2 = round(doc["data"][0]["lw2"].as<float>() * 100.0) / 100.0;
+          lw3 = round(doc["data"][0]["lw3"].as<float>() * 100.0) / 100.0;
+          w1 = round(doc["data"][0]["w1"].as<float>() * 100.0) / 100.0;
+          w2 = round(doc["data"][0]["w2"].as<float>() * 100.0) / 100.0;
+          w3 = round(doc["data"][0]["w3"].as<float>() * 100.0) / 100.0;
+          h1 = round(doc["data"][0]["h1"].as<float>() * 100.0) / 100.0;
+          h2 = round(doc["data"][0]["h2"].as<float>() * 100.0) / 100.0;
+          h3 = round(doc["data"][0]["h3"].as<float>() * 100.0) / 100.0;
+          vh1 = round(doc["data"][0]["vh1"].as<float>() * 100.0) / 100.0;
+          vh2 = round(doc["data"][0]["vh2"].as<float>() * 100.0) / 100.0;
+          vh3 = round(doc["data"][0]["vh3"].as<float>() * 100.0) / 100.0;
+          moist_min = round(doc["data"][0]["moist_min"].as<float>() * 100.0) / 100.0;
+          moist_max = round(doc["data"][0]["moist_max"].as<float>() * 100.0) / 100.0;
         }
       }
     } else {
@@ -190,8 +190,8 @@ void getFuzzy() {
         DeserializationError error = deserializeJson(doc, payload);
 
         if (!error) {
-          heater_pwm = doc["data"][0]["heater_pwm"];
-          exhaust_pwm = doc["data"][0]["exhaust_pwm"];
+          heater_pwm = round(doc["data"][0]["heater_pwm"].as<float>() * 100.0) / 100.0;
+          exhaust_pwm = round(doc["data"][0]["exhaust_pwm"].as<float>() * 100.0) / 100.0;
         }
       }
     } else {
