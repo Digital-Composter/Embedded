@@ -55,8 +55,8 @@ void loop() {
 void receiveFromMCU() {
   int packetSize = LoRa.parsePacket();
   if (packetSize) {
-    uint8_t targetAddress = LoRa.read(); // Read the first byte as address
-    if (targetAddress == address_B) {    // Check if the packet is for ESP_A from ESP_C
+    uint8_t targetAddress = LoRa.read();
+    if (targetAddress == address_B) {
       while (LoRa.available()) {
         incomingMessage += (char)LoRa.read();
       }
@@ -89,18 +89,16 @@ void parseLoRaMessage(String message) {
   target_temp = getValue(message, "targettemp").toFloat();
 }
 
-// Helper function to extract the value associated with a key from the message
 String getValue(String data, String key) {
-  // Add a delimiter to ensure exact key matching
   int startIndex = data.indexOf(key + ":") + key.length() + 1;
   int endIndex = data.indexOf(",", startIndex);
 
   if (startIndex == -1 || startIndex < key.length()) {
-    return ""; // Return an empty string if key is not found
+    return "";
   }
 
   if (endIndex == -1) {
-    endIndex = data.length();  // If it's the last element, read till the end of the string
+    endIndex = data.length();
   }
   
   return data.substring(startIndex, endIndex);
@@ -114,7 +112,6 @@ void postRealtime(int temp_val, int moist_val, int ph_val, String phase) {
 
     http.addHeader("Content-Type", "application/json");
 
-    // Ensure phase is a properly quoted string
     String httpRequestData = "{\"temp\":" + String(temp_val) +
                             ",\"moist\":" + String(moist_val) +
                             ",\"ph\":" + String(ph_val) +
@@ -155,6 +152,8 @@ void postRecords() {
     HTTPClient http;
 
     http.begin("https://dicompos-backend-prod-45yiaz3vqa-et.a.run.app/data/records");
+
+    http.addHeader("Content-Type", "application/json");
 
     String httpRequestData = "{\"log\":" + log + "}";
 
