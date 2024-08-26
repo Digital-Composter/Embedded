@@ -218,30 +218,30 @@ void sendLoRaMessage( int8_t address,
   
   LoRa.write(address);
   
-  LoRa.print("state:"); LoRa.print(state); LoRa.print(",");
-  LoRa.print("vc1:"); LoRa.print(vc1); LoRa.print(",");
-  LoRa.print("vc2:"); LoRa.print(vc2); LoRa.print(",");
-  LoRa.print("vc3:"); LoRa.print(vc3); LoRa.print(",");
-  LoRa.print("jc1:"); LoRa.print(c1); LoRa.print(",");
-  LoRa.print("jc2:"); LoRa.print(c2); LoRa.print(",");
-  LoRa.print("jc3:"); LoRa.print(c3); LoRa.print(",");
-  LoRa.print("lw1:"); LoRa.print(lw1); LoRa.print(",");
-  LoRa.print("lw2:"); LoRa.print(lw2); LoRa.print(",");
-  LoRa.print("lw3:"); LoRa.print(lw3); LoRa.print(",");
-  LoRa.print("jw1:"); LoRa.print(w1); LoRa.print(",");
-  LoRa.print("jw2:"); LoRa.print(w2); LoRa.print(",");
-  LoRa.print("jw3:"); LoRa.print(w3); LoRa.print(",");
-  LoRa.print("h1:"); LoRa.print(h1); LoRa.print(",");
-  LoRa.print("h2:"); LoRa.print(h2); LoRa.print(",");
-  LoRa.print("h3:"); LoRa.print(h3); LoRa.print(",");
-  LoRa.print("vh1:"); LoRa.print(vh1); LoRa.print(",");
-  LoRa.print("vh2:"); LoRa.print(vh2); LoRa.print(",");
-  LoRa.print("vh3:"); LoRa.print(vh3); LoRa.print(",");
-  LoRa.print("moistmin:"); LoRa.print(moist_min); LoRa.print(",");
-  LoRa.print("moistmax:"); LoRa.print(moist_max); LoRa.print(",");
-  LoRa.print("days:"); LoRa.print(days); LoRa.print(",");
-  LoRa.print("heater:"); LoRa.print(heater); LoRa.print(",");
-  LoRa.print("exhaust:"); LoRa.print(exhaust); LoRa.print(",");
+  LoRa.print("a:"); LoRa.print(state); LoRa.print(",");
+  LoRa.print("b:"); LoRa.print(vc1); LoRa.print(",");
+  LoRa.print("c:"); LoRa.print(vc2); LoRa.print(",");
+  LoRa.print("d:"); LoRa.print(vc3); LoRa.print(",");
+  LoRa.print("e:"); LoRa.print(c1); LoRa.print(",");
+  LoRa.print("f:"); LoRa.print(c2); LoRa.print(",");
+  LoRa.print("g:"); LoRa.print(c3); LoRa.print(",");
+  LoRa.print("h:"); LoRa.print(lw1); LoRa.print(",");
+  LoRa.print("i:"); LoRa.print(lw2); LoRa.print(",");
+  LoRa.print("j:"); LoRa.print(lw3); LoRa.print(",");
+  LoRa.print("k:"); LoRa.print(w1); LoRa.print(",");
+  LoRa.print("l:"); LoRa.print(w2); LoRa.print(",");
+  LoRa.print("m:"); LoRa.print(w3); LoRa.print(",");
+  LoRa.print("n:"); LoRa.print(h1); LoRa.print(",");
+  LoRa.print("o:"); LoRa.print(h2); LoRa.print(",");
+  LoRa.print("p:"); LoRa.print(h3); LoRa.print(",");
+  LoRa.print("q:"); LoRa.print(vh1); LoRa.print(",");
+  LoRa.print("r:"); LoRa.print(vh2); LoRa.print(",");
+  LoRa.print("s:"); LoRa.print(vh3); LoRa.print(",");
+  LoRa.print("t:"); LoRa.print(moist_min); LoRa.print(",");
+  LoRa.print("u:"); LoRa.print(moist_max); LoRa.print(",");
+  LoRa.print("v:"); LoRa.print(days); LoRa.print(",");
+  LoRa.print("w:"); LoRa.print(heater); LoRa.print(",");
+  LoRa.print("x:"); LoRa.print(exhaust); LoRa.print(",");
 
   LoRa.endPacket();
 }
