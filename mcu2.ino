@@ -21,11 +21,9 @@
 
 const uint32_t TIMEOUT = 500UL;
 
-const byte moist[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x01, 0x84, 0x0A};
-const byte temp[] = {0x01, 0x03, 0x00, 0x01, 0x00, 0x01, 0xD5, 0xCA};
-const byte PH[] = {0x01, 0x03, 0x00, 0x03, 0x00, 0x01, 0x74, 0x0A};
+const byte interrogate[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x04, 0x44, 0x09};
 
-byte values[11];
+byte values[13];
 
 // Rx pin, Tx pin // Software serial for RS485 communication
 SoftwareSerial mod(17, 16);
@@ -39,7 +37,7 @@ int days = 0;
 float vc1, vc2, vc3, c1, c2, c3, lw1, lw2, lw3, w1, w2, w3, h1, h2, h3, vh1, vh2, vh3, moist_min, moist_max;
 float heater_pwm, exhaust_pwm;
 
-int temp_val, moist_val, moist_val_scaled, ph_val, moist_analog;
+int temp_val, moist_val, ph_val;
 
 float target_temp;
 String phase = "";
@@ -109,12 +107,7 @@ void receiveFromGateway_A() {
       Serial.printf("heater: %.3f, exhaust: %.3f\n", heater_pwm, exhaust_pwm);
 
       if (state == 1){
-        temp_val = temperature();
-        moist_val_scaled = moisture();
-        ph_val = ph();
-
-        moist_val_scaled = constrain(moist_val_scaled, 0, 25);
-        moist_val = map(moist_val_scaled, 0, 20, 0, 100);
+        readPR3001ECTHPHN01();
 
         Serial.printf("\nTemperature: %d, Moisture: %d, pH: %d, Days: %d\n", temp_val, moist_val, ph_val, days);
         phase = determinePhase(temp_val, days);
@@ -130,12 +123,7 @@ void receiveFromGateway_A() {
         incomingMessage = "";
       }
       else {
-        temp_val = temperature();
-        moist_val_scaled = moisture();
-        ph_val = ph();
-
-        moist_val_scaled = constrain(moist_val_scaled, 0, 25);
-        moist_val = map(moist_val_scaled, 0, 20, 0, 100);
+        readPR3001ECTHPHN01();
 
         Serial.printf("\nTemperature: %d, Moisture: %d, pH: %d, Days: %d\n", temp_val, moist_val, ph_val, days);
         phase = determinePhase(temp_val, days);
@@ -177,30 +165,30 @@ void transmitToGateway_B(int8_t address, int temp, int moist, int ph, String pha
 }
 
 void parseLoRaMessage(String message) {
-  state = getValue(message, "state").toInt();
-  vc1 = getValue(message, "vc1").toFloat();
-  vc2 = getValue(message, "vc2").toFloat();
-  vc3 = getValue(message, "vc3").toFloat();
-  c1 = getValue(message, "jc1").toFloat();
-  c2 = getValue(message, "jc2").toFloat();
-  c3 = getValue(message, "jc3").toFloat();
-  lw1 = getValue(message, "lw1").toFloat();
-  lw2 = getValue(message, "lw2").toFloat();
-  lw3 = getValue(message, "lw3").toFloat();
-  w1 = getValue(message, "jw1").toFloat();
-  w2 = getValue(message, "jw2").toFloat();
-  w3 = getValue(message, "jw3").toFloat();
-  h1 = getValue(message, "h1").toFloat();
-  h2 = getValue(message, "h2").toFloat();
-  h3 = getValue(message, "h3").toFloat();
-  vh1 = getValue(message, "vh1").toFloat();
-  vh2 = getValue(message, "vh2").toFloat();
-  vh3 = getValue(message, "vh3").toFloat();
-  moist_min = getValue(message, "moistmin").toFloat();  // Adjusted key to match input data
-  moist_max = getValue(message, "moistmax").toFloat();  // Adjusted key to match input data
-  days = getValue(message, "days").toInt();
-  heater_pwm = getValue(message, "heater").toFloat();
-  exhaust_pwm = getValue(message, "exhaust").toFloat();
+  state = getValue(message, "a").toInt();
+  vc1 = getValue(message, "b").toFloat();
+  vc2 = getValue(message, "c").toFloat();
+  vc3 = getValue(message, "d").toFloat();
+  c1 = getValue(message, "e").toFloat();
+  c2 = getValue(message, "f").toFloat();
+  c3 = getValue(message, "g").toFloat();
+  lw1 = getValue(message, "h").toFloat();
+  lw2 = getValue(message, "i").toFloat();
+  lw3 = getValue(message, "j").toFloat();
+  w1 = getValue(message, "k").toFloat();
+  w2 = getValue(message, "l").toFloat();
+  w3 = getValue(message, "m").toFloat();
+  h1 = getValue(message, "n").toFloat();
+  h2 = getValue(message, "o").toFloat();
+  h3 = getValue(message, "p").toFloat();
+  vh1 = getValue(message, "q").toFloat();
+  vh2 = getValue(message, "r").toFloat();
+  vh3 = getValue(message, "s").toFloat();
+  moist_min = getValue(message, "t").toFloat();  // Adjusted key to match input data
+  moist_max = getValue(message, "u").toFloat();  // Adjusted key to match input data
+  days = getValue(message, "v").toInt();
+  heater_pwm = getValue(message, "w").toFloat();
+  exhaust_pwm = getValue(message, "x").toFloat();
 }
 
 // Helper function to extract the value associated with a key from the message
@@ -323,15 +311,14 @@ void controlActuators(float heater_pwm, float exhaust_pwm, float moist_min, floa
     }
 }
 
-int16_t moisture() {
-  float MOIST3and4;
+void readPR3001ECTHPHN01() {
   uint32_t startTime = 0;
   uint8_t  byteCount = 0;
 
   digitalWrite(DE, HIGH);
   digitalWrite(RE, HIGH);
   delay(10);
-  mod.write(moist, sizeof(moist));
+  mod.write(interrogate, sizeof(interrogate));
     mod.flush();
     digitalWrite(DE, LOW);
     digitalWrite(RE, LOW);
@@ -342,61 +329,8 @@ int16_t moisture() {
       values[byteCount++] = mod.read();
       //printHexByte(values[byteCount - 1]);
     }
-    MOIST3and4 = (((values[3] * 256.0) + values[4])/10); // converting hexadecimal to decimal
+    moist_val = (((values[3] * 256.0) + values[4])/10); // converting hexadecimal to decimal
+    temp_val = (((values[5] * 256.0) + values[6])/10); // converting hexadecimal to decimal
+    ph_val = (((values[9] * 256.0) + values[10])/10); // converting hexadecimal to decimal
   }
-    //Serial.println();
-    return MOIST3and4;
-}
-
-int16_t temperature() {
-  float TEMP3and4;
-  uint32_t startTime = 0;
-  uint8_t  byteCount = 0;
-// switch RS-485 to transmit mode
-  digitalWrite(DE, HIGH);
-  digitalWrite(RE, HIGH);
-  delay(10);
-// write out the message
-  mod.write(temp, sizeof(temp));
-// wait for the transmission to complete
-  mod.flush();
-// switch RS-485 to receive mode
-  digitalWrite(DE, LOW);
-  digitalWrite(RE, LOW);
-
-  startTime = millis();
-  while ( millis() - startTime <= TIMEOUT ) {
-    if (mod.available() && byteCount < sizeof(values) ) {
-      values[byteCount++] = mod.read();
-      //printHexByte(values[byteCount - 1]);
-    }
-    TEMP3and4 = (((values[3] * 256.0) + values[4])/10); // converting hexadecimal to decimal
-  }
-    //Serial.println();
-    return TEMP3and4;
-}
-
-int16_t ph() {
-  float PH3and4;
-  uint32_t startTime = 0;
-  uint8_t  byteCount = 0;
-
-  digitalWrite(DE, HIGH);
-  digitalWrite(RE, HIGH);
-  delay(10);
-  mod.write(PH, sizeof(PH));
-  mod.flush();
-  digitalWrite(DE, LOW);
-  digitalWrite(RE, LOW);
-
-  startTime = millis();
-  while ( millis() - startTime <= TIMEOUT ) {
-    if (mod.available() && byteCount < sizeof(values) ) {
-     values[byteCount++] = mod.read();
-      //printHexByte(values[byteCount - 1]);
-    }
-    PH3and4 = (((values[3] * 256.0) + values[4])/10) + 1; // converting hexadecimal to decimal
-  }
-  //Serial.println();
-  return PH3and4;
 }
