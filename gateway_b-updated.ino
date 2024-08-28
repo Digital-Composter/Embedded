@@ -82,11 +82,11 @@ void receiveFromMCU() {
 }
 
 void parseLoRaMessage(String message) {
-  temp_val = getValue(message, "temp").toInt();
-  moist_val = getValue(message, "moist").toInt();
-  ph_val = getValue(message, "pH").toInt();
-  phase = getValue(message, "phase");
-  target_temp = getValue(message, "targettemp").toFloat();
+  temp_val = getValue(message, "a").toInt();
+  moist_val = getValue(message, "b").toInt();
+  ph_val = getValue(message, "c").toInt();
+  phase = getValue(message, "d");
+  target_temp = getValue(message, "e").toFloat();
 }
 
 String getValue(String data, String key) {
@@ -155,7 +155,7 @@ void postRecords() {
 
     http.addHeader("Content-Type", "application/json");
 
-    String httpRequestData = "{\"log\":" + log + "}";
+    String httpRequestData = "{\"log\":\"" + log + "\"}";
 
     int httpResponseCode = http.POST(httpRequestData);
 
