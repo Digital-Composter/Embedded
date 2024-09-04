@@ -7,15 +7,13 @@
 #define LORA_AURORA_V2_NSS 5
 #define LORA_AURORA_V2_RST 14
 #define LORA_AURORA_V2_DIO0 2
-//#define LORA_AURORA_V2_EN 32
 
-//Pin PR3001
 #define RE 27
 #define DE 26
 
 #define heatFan 25
 #define waterPump 32
-//#define mixMotor 33
+#define mixMotor 33
 #define ptcHeater 13
 #define coolFan 12
 
@@ -46,19 +44,17 @@ void setup() {
   Serial.begin(4800);
   mod.begin(4800);
 
-  //Setup untuk input
   pinMode(RE, OUTPUT);
   pinMode(DE, OUTPUT);
 
-  //Setup untuk output
   pinMode(heatFan, OUTPUT);
   pinMode(waterPump, OUTPUT);
-  //pinMode(mixMotor, OUTPUT);
+  pinMode(mixMotor, OUTPUT);
   pinMode(ptcHeater, OUTPUT);
   pinMode(coolFan, OUTPUT);
   digitalWrite(heatFan, HIGH);
   digitalWrite(waterPump, HIGH);
-  //digitalWrite(mixMotor, HIGH);
+  digitalWrite(mixMotor, HIGH);
 
   Serial.println();
   Serial.println();
@@ -87,8 +83,8 @@ void loop() {
 void receiveFromGateway_A() {
   int packetSize = LoRa.parsePacket();
   if (packetSize) {
-    uint8_t targetAddress = LoRa.read(); // Read the first byte as address
-    if (targetAddress == address_MCU) {    // Check if the packet is for ESP_A from ESP_C
+    uint8_t targetAddress = LoRa.read(); 
+    if (targetAddress == address_MCU) {   
       while (LoRa.available()) {
         incomingMessage += (char)LoRa.read();
       }
@@ -116,7 +112,7 @@ void receiveFromGateway_A() {
         setTargetTemp(phase);
         Serial.printf("\nTarget Temperature: %.3f\n", target_temp);
             
-        transmitToGateway_B(address_B, temp_val, moist_val, ph_val, phase, target_temp);  // Step 2: Immediately transmit `sensor_a` to ESP_B
+        transmitToGateway_B(address_B, temp_val, moist_val, ph_val, phase, target_temp); 
 
         controlActuators(heater_pwm, exhaust_pwm, moist_min, moist_max, moist_val);
         
@@ -135,10 +131,10 @@ void receiveFromGateway_A() {
         analogWrite(ptcHeater, 0);
         analogWrite(coolFan, 0);
         digitalWrite(heatFan, HIGH);
-        //digitalWrite(mixMotor, HIGH);
+        digitalWrite(mixMotor, HIGH);
         digitalWrite(waterPump, HIGH);
             
-        transmitToGateway_B(address_B, temp_val, moist_val, ph_val, phase, target_temp);  // Step 2: Immediately transmit `sensor_a` to ESP_B
+        transmitToGateway_B(address_B, temp_val, moist_val, ph_val, phase, target_temp);
         incomingMessage = "";
       }
     }
@@ -151,17 +147,17 @@ void transmitToGateway_B(int8_t address, int temp, int moist, int ph, String pha
   
   LoRa.write(address);
   
-  LoRa.print("temp:"); LoRa.print(temp); LoRa.print(",");
-  LoRa.print("moist:"); LoRa.print(moist); LoRa.print(",");
-  LoRa.print("pH:"); LoRa.print(ph); LoRa.print(",");
-  LoRa.print("phase:"); LoRa.print(phase); LoRa.print(",");
-  LoRa.print("targettemp:"); LoRa.print(target_temp); LoRa.print(",");
+  LoRa.print("a:"); LoRa.print(temp); LoRa.print(",");
+  LoRa.print("b:"); LoRa.print(moist); LoRa.print(",");
+  LoRa.print("c:"); LoRa.print(ph); LoRa.print(",");
+  LoRa.print("d:"); LoRa.print(phase); LoRa.print(",");
+  LoRa.print("e:"); LoRa.print(target_temp); LoRa.print(",");
 
   LoRa.endPacket();
 
   Serial.println("Data transmitted to Gateway B\n");
 
-  delay(500); // Short delay to ensure transmission is complete
+  delay(500);
 }
 
 void parseLoRaMessage(String message) {
@@ -184,25 +180,23 @@ void parseLoRaMessage(String message) {
   vh1 = getValue(message, "q").toFloat();
   vh2 = getValue(message, "r").toFloat();
   vh3 = getValue(message, "s").toFloat();
-  moist_min = getValue(message, "t").toFloat();  // Adjusted key to match input data
-  moist_max = getValue(message, "u").toFloat();  // Adjusted key to match input data
+  moist_min = getValue(message, "t").toFloat();  
+  moist_max = getValue(message, "u").toFloat();  
   days = getValue(message, "v").toInt();
   heater_pwm = getValue(message, "w").toFloat();
   exhaust_pwm = getValue(message, "x").toFloat();
 }
 
-// Helper function to extract the value associated with a key from the message
 String getValue(String data, String key) {
-  // Add a delimiter to ensure exact key matching
   int startIndex = data.indexOf(key + ":") + key.length() + 1;
   int endIndex = data.indexOf(",", startIndex);
 
   if (startIndex == -1 || startIndex < key.length()) {
-    return ""; // Return an empty string if key is not found
+    return "";
   }
 
   if (endIndex == -1) {
-    endIndex = data.length();  // If it's the last element, read till the end of the string
+    endIndex = data.length();
   }
   
   return data.substring(startIndex, endIndex);
@@ -265,47 +259,47 @@ void controlActuators(float heater_pwm, float exhaust_pwm, float moist_min, floa
 
     if (heater_pwm > exhaust_pwm && moist_val < moist_min) {
         digitalWrite(heatFan, LOW);
-        //digitalWrite(mixMotor, LOW);
+        digitalWrite(mixMotor, LOW);
         digitalWrite(waterPump, LOW);
         Serial.println("Condition 1: HeatFan ON, MixMotor ON, WaterPump ON");
     } else if (heater_pwm < exhaust_pwm && moist_val < moist_min) {
         digitalWrite(heatFan, HIGH);
-        //digitalWrite(mixMotor, LOW);
+        digitalWrite(mixMotor, LOW);
         digitalWrite(waterPump, LOW);
         Serial.println("Condition 2: HeatFan OFF, MixMotor ON, WaterPump ON");
     } else if (heater_pwm == exhaust_pwm && moist_val < moist_min) {
         digitalWrite(heatFan, HIGH);
-        //digitalWrite(mixMotor, LOW);
+        digitalWrite(mixMotor, LOW);
         digitalWrite(waterPump, LOW);
         Serial.println("Condition 3: HeatFan OFF, MixMotor ON, WaterPump ON");
     } else if (heater_pwm > exhaust_pwm && moist_val > moist_max) {
         digitalWrite(heatFan, LOW);
-        //digitalWrite(mixMotor, LOW);
+        digitalWrite(mixMotor, LOW);
         digitalWrite(waterPump, HIGH);
         Serial.println("Condition 4: HeatFan ON, MixMotor ON, WaterPump OFF");
     } else if (heater_pwm < exhaust_pwm && moist_val > moist_max) {
         digitalWrite(heatFan, LOW);
-        //digitalWrite(mixMotor, LOW);
+        digitalWrite(mixMotor, LOW);
         digitalWrite(waterPump, HIGH);
         Serial.println("Condition 5: HeatFan ON, MixMotor ON, WaterPump OFF");
     } else if (heater_pwm == exhaust_pwm && moist_val > moist_max) {
         digitalWrite(heatFan, LOW);
-        //digitalWrite(mixMotor, LOW);
+        digitalWrite(mixMotor, LOW);
         digitalWrite(waterPump, HIGH);
         Serial.println("Condition 6: HeatFan ON, MixMotor ON, WaterPump OFF");
     } else if (heater_pwm > exhaust_pwm && moist_val > moist_min && moist_val < moist_max) {
         digitalWrite(heatFan, LOW);
-        //digitalWrite(mixMotor, HIGH);
+        digitalWrite(mixMotor, HIGH);
         digitalWrite(waterPump, HIGH);
         Serial.println("Condition 7: HeatFan ON, MixMotor OFF, WaterPump OFF");
     } else if (heater_pwm < exhaust_pwm && moist_val > moist_min && moist_val < moist_max) {
         digitalWrite(heatFan, HIGH);
-        //digitalWrite(mixMotor, LOW);
+        digitalWrite(mixMotor, LOW);
         digitalWrite(waterPump, HIGH);
         Serial.println("Condition 8: HeatFan OFF, MixMotor ON, WaterPump OFF");
     } else if (heater_pwm == exhaust_pwm && moist_val > moist_min && moist_val < moist_max) {
         digitalWrite(heatFan, HIGH);
-        //digitalWrite(mixMotor, HIGH);
+        digitalWrite(mixMotor, HIGH);
         digitalWrite(waterPump, HIGH);
         Serial.println("Condition 9: HeatFan OFF, MixMotor OFF, WaterPump OFF");
     }
@@ -327,10 +321,9 @@ void readPR3001ECTHPHN01() {
   while ( millis() - startTime <= TIMEOUT ) {
     if (mod.available() && byteCount < sizeof(values) ) {
       values[byteCount++] = mod.read();
-      //printHexByte(values[byteCount - 1]);
     }
-    moist_val = (((values[3] * 256.0) + values[4])/10); // converting hexadecimal to decimal
-    temp_val = (((values[5] * 256.0) + values[6])/10); // converting hexadecimal to decimal
-    ph_val = (((values[9] * 256.0) + values[10])/10); // converting hexadecimal to decimal
+    moist_val = (((values[3] * 256.0) + values[4])/10);
+    temp_val = (((values[5] * 256.0) + values[6])/10);
+    ph_val = (((values[9] * 256.0) + values[10])/10);
   }
 }
